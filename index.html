@@ -13,7 +13,9 @@
 	  stroke-width: 3px;
 	}
 
-	.node text { font: 12px sans-serif; }
+	.node text { 
+		font: 12px sans-serif; 	
+	}
 
 	.link {
 	  fill: none;
@@ -42,6 +44,11 @@
 'Forgot Password Popup':
   'Enter Email': 'Email Sent / Notify'
   'Cancel': 'Root:Login View'
+  'Casdfsncel': 'Root:Login View'
+
+'Email Sent / Notify':
+  'Clear Notify': 'Root:Login View'
+
 </textarea>
 <button>Update</button>
 
@@ -55,24 +62,6 @@
 
 
 
-var loginFlow = `
-"Root:Login View":
-  "Click Forgot Password": "Forgot Password Popup"
-  "Enter Valid Credentials": "Dashboard"
-  "Enter Invalid Credentials": "Show Errors"
-
-'Forgot Password Popup':
-  'Enter Email': 'Email Sent / Notify'
-  'Cancel': 'Root:Login View'
-`;
-
-
-
-
-
-
-
-
 
 var textarea = document.querySelector('textarea');
 var btn = document.querySelector('button');
@@ -80,6 +69,10 @@ var btn = document.querySelector('button');
 btn.addEventListener('click', function (e) {
 	parseAndUpdate(textarea.value);
 })
+
+function buildTestCases (graph) {
+	
+}
 
 function parseAndUpdate (yamlString) {
 
@@ -90,22 +83,24 @@ function parseAndUpdate (yamlString) {
 
 	var visited = [];
 
-	function transform (key, node) {
+	function transform (key, node, viewDepth = 1) {
 		if (visited.indexOf(key) >= 0) {
-			return { name: `ref(${key})`, type: 'view' }
+			return { name: `ref(${key})`, type: 'view', viewDepth }
 		}
 
 		visited.push(key);
 
 		return {
-			type: 'view',
 			name: key,
+			type: 'view',
+			viewDepth,
 			children: node && Object.keys(node)
 								.map(action => {
 									return { 
 										name: action, 
 										type: 'action', 
-										children: [ transform(node[action], json[node[action]]) ] 
+										viewDepth,
+										children: [ transform(node[action], json[node[action]], viewDepth + 1) ] 
 									};
 								})
 		}
@@ -124,7 +119,8 @@ parseAndUpdate(textarea.value);
 
 function update(root) {
 
-
+// For matching Refs
+var regex = /ref\((.+)\)/;
 
 // ************** Generate the tree diagram	 *****************
 var margin = {top: 20, right: 120, bottom: 20, left: 120},
@@ -139,10 +135,16 @@ var tree = d3.layout.tree()
 var diagonal = d3.svg.diagonal()
 	.source(d => {
 		let rect = d.source.el.getBoundingClientRect();
+		let target = d.target;
+		if (regex.test(d.target.name)) {
+			var realNode = nodes.find(node => regex.exec(d.target.name)[1] === node.name);
+			target = realNode;
+		}
 
-		if (d.source.depth > d.target.depth) {
+		if (d.source.depth > target.depth) {
+			console.log(d.source.name, target.name);
 			return { x: d.source.x, y: d.source.y - (rect.width/2) }
-		} else if (d.source.depth === d.target.depth) {
+		} else if (d.source.depth === target.depth) {
 			return { x: d.source.x, y: d.source.y + (rect.width/2) }
 		} else {
 			return { x: d.source.x, y: d.source.y + (rect.width/2) }
@@ -150,13 +152,18 @@ var diagonal = d3.svg.diagonal()
 	})
 	.target(d => {
 		let rect = d.source.el.getBoundingClientRect();
+		let target = d.target;
+		if (regex.test(d.target.name)) {
+			var realNode = nodes.find(node => regex.exec(d.target.name)[1] === node.name);
+			target = realNode;
+		}
 
-		if (d.source.depth > d.target.depth) {
-			return { x: d.target.x, y: d.target.y + (rect.width/2) }
-		} else if (d.source.depth === d.target.depth) {
-			return { x: d.target.x, y: d.target.y - (rect.width/2) }
+		if (d.source.depth > target.depth) {
+			return { x: target.x, y: target.y + (rect.width/2) }
+		} else if (d.source.depth === target.depth) {
+			return { x: target.x, y: target.y - (rect.width/2) }
 		} else {
-			return { x: d.target.x, y: d.target.y - (rect.width/2) }
+			return { x: target.x, y: target.y - (rect.width/2) }
 		}
 
 		
@@ -180,15 +187,28 @@ var svg = d3.select("#chart").append("svg")
   var nodes = tree.nodes(root).reverse(),
 	  links = tree.links(nodes);
 // Need to add extra links for circular references
-var regex = /ref\((.+)\)/;
-links.filter(link => regex.test(link.target.name))
-.forEach(link => {
-	link.target = nodes.find(n => n.name === regex.exec(link.target.name)[1])
-});
+
+// links.filter(link => regex.test(link.target.name))
+// .forEach(link => {
+// 	console.log(link.source.name, link.target.name);
+// 	var newTarget = nodes.find(n => n.name === regex.exec(link.target.name)[1]);
+// 	console.log('new Target', newTarget);
+// 	// link.target = newTarget;
+
+
+// 	// svg.append('path','g')
+// 	// .attr('class', 'link')
+// 	// .attr('d', d => {
+// 	// 	return diagonal({
+// 	// 		source: link.source,
+// 	// 		target: newTarget
+// 	// 	});
+// 	// });
+// });
 
 // Remove ref node
-nodes.filter(node => regex.test(node.name))
-.forEach(node => nodes.splice(nodes.indexOf(node), 1));
+// nodes.filter(node => regex.test(node.name))
+// .forEach(node => nodes.splice(nodes.indexOf(node), 1));
 
   // Normalize for fixed-depth.
   nodes.forEach(function(d) { d.y = d.depth * 130; });
@@ -196,22 +216,46 @@ nodes.filter(node => regex.test(node.name))
   // Declare the nodes…
   var node = svg.selectAll("g.node")
 	  .data(nodes, d => { 
-		  return d.id || (d.id = d.name); 
+		  return d.id || (d.id = ++i); 
 		});
 
   // Enter the nodes.
   var nodeEnter = node.enter().append("g")
-	  .attr("class", "node")
-	  .attr("transform", function(d) {
-		  if (d.type === 'action') {
-			  let index = d.parent.children.indexOf(d);
-			  let offset = (index + 1) * 40;
-
-			  d.x = d.parent.x + offset;
-			  d.y = d.parent.y;
-		  } else {
-			//   d.y = d.y - 75;
+	  .attr("class", 'node')
+	  .attr('view', d => d.type === 'action' ? d.parent.id : d.id )
+	  .attr('opacity', d => {
+		  if (regex.test(d.name)) {
+			  return 0;
 		  }
+		  return 1;
+	  })
+	  .attr("transform", function(d) {
+
+		  var viewDepth = d.viewDepth;
+
+		if (regex.test(d.name)) {
+			var realNode = nodes.find(node => regex.exec(d.name)[1] === node.name);
+			viewDepth = realNode.viewDepth;
+			d.y = realNode.y;
+		//   d.x = realNode.x;
+		//   d.y = realNode.y;
+		}
+		  
+		var index = nodes.filter(node => node.viewDepth === viewDepth).reverse().indexOf(d);  
+
+		
+		let offset = (index + 1) * 40;
+		d.x = offset;
+
+		  if (d.type === 'action') {
+			  d.y = d.parent.y;
+		  } else if(!d.children){
+			d.x += 40;
+		  } 
+
+
+		  
+
 		  return "translate(" + d.y + "," + d.x + ")"; 
 		});
 
@@ -222,7 +266,11 @@ nodes.filter(node => regex.test(node.name))
 	  .attr("x2", d => 75)
 	  .attr("y1", d => 20)
 	  .attr("y2", d => 20)
-	  .style("stroke", d => 'black')
+	  .style("stroke", d => {
+		//   if (d.parent && d.parent.children.indexOf(d) === d.parent.children.length - 1) return 'rgba(0,0,0,0)';
+
+		  return 'black';
+	  })
 	  .style('stroke-dasharray', d => {
 		return d.type==='action' ? '5,5' : '1,0';
 	  });

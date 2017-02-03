@@ -7,8 +7,14 @@ import Editor from './Editor'
 import FlowSelector from './FlowSelector'
 import TestCaseList from './TestCaseList'
 
+function url (path) {
+  return `http://localhost:7000${path}`;
+}
 
-var LOGIN = `
+// dummy in case the server fails
+
+let flows = {
+  'login': `
 "Root:Login View":
   "Click Forgot Password": 
     result: "Forgot Password Popup"
@@ -18,7 +24,7 @@ var LOGIN = `
       click #forgotPassword
 
   "Enter Valid Credentials":
-    result: "Dashboard"
+    result: "Dashboard" 
   "Enter Invalid Credentials":
     result:  "Show Errors"
 
@@ -33,32 +39,34 @@ var LOGIN = `
 'Email Sent / Notify':
   'Clear Notify':
     result:  'Root:Login View'
-`;
 
-var REGISTER = `
-"Root:Register View":
-  "Do Something":
-    result: "Something Happened"
-    human: >
-      You did something
-    machine: >
-      click #something
-`;
-
-const flows = { LOGIN, REGISTER }
-
+  `
+}
 
 export default class App extends Component {
   constructor () {
     super();
-    
 
     this.state = {
       flows: flows,
-      selected: 'LOGIN',
-      yaml: flows.LOGIN,
-      graph: yamlParse(flows.LOGIN)
+      selected: 'login',
+      yaml: flows.login,
+      graph: yamlParse(flows.login)
     }
+    
+    fetch(url('/flows'))
+    .then(res => res.json())
+    .then(data => {
+      let selected = Object.keys(data)[0];
+
+      this.setState({
+        selected,
+        flows: data,
+        yaml: data[selected],
+        graph: yamlParse(data[selected])
+      });
+    })
+
 
     this.handleYamlChange = this.handleYamlChange.bind(this)
     this.handleMouseEnterLeave = this.handleMouseEnterLeave.bind(this);
@@ -83,6 +91,15 @@ export default class App extends Component {
     this.setState({
       flows: newFlows,
       graph: yamlParse(newFlows[this.state.selected])
+    });
+
+    // Update backend
+    fetch(url(`/flows/${this.state.selected}`), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content: yamlString })
     });
   }
 

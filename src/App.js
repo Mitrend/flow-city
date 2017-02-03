@@ -87,20 +87,26 @@ export default class App extends Component {
   }
 
   handleYamlChange (yamlString) {
-    let newFlows = {...this.state.flows, [this.state.selected]: yamlString };
-    this.setState({
-      flows: newFlows,
-      graph: yamlParse(newFlows[this.state.selected])
-    });
 
-    // Update backend
-    fetch(url(`/flows/${this.state.selected}`), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ content: yamlString })
-    });
+    try {
+      let newFlows = {...this.state.flows, [this.state.selected]: yamlString };
+      this.setState({ flows: newFlows });
+
+      let parsed = yamlParse(yamlString);
+      this.setState({ graph: parsed });
+        
+      // Update backend
+      fetch(url(`/flows/${this.state.selected}`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: yamlString })
+      });
+    } catch (err) {
+      console.warn(`Error parsing on line: ${err.mark.line}: ${err.message}`);
+    }
+   
   }
 
   handleMouseEnterLeave (type, list) {

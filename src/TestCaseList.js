@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function TestCaseList ({ graph, onMouse }) {
+export default function TestCaseList ({ graph={}, onMouse }) {
 
 	function walk (node, path = [], basket = []) {
 		var fork = path.slice(0);

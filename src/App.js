@@ -4,10 +4,17 @@ import yamlParse from './yamlParse'
 
 import FlowChart from './FlowChart'
 import Editor from './Editor'
+import FlowSelector from './FlowSelector'
 import TestCaseList from './TestCaseList'
 
+function url (path) {
+  return `http://localhost:7000${path}`;
+}
 
-var starting = `
+// dummy in case the server fails
+
+let flows = {
+  'login': `
 "Root:Login View":
   "Click Forgot Password": 
     result: "Forgot Password Popup"
@@ -17,14 +24,11 @@ var starting = `
         actions:
             -   action: 'click'
                 element: "#js-forgot-password"
+
   "Enter Valid Credentials":
-    result: "Dashboard"
+    result: "Dashboard" 
   "Enter Invalid Credentials":
     result:  "Show Errors"
-
-'Forgot Password Popup':
-  'Enter Email':
-    result:  'Email Sent / Notify'
     machine: 
         wait: 2000
         actions:
@@ -34,9 +38,13 @@ var starting = `
             -   action: "click"
                 element: "#popup #rightAction"
                 snapshot: "Filled in Form"
+
+'Forgot Password Popup':
+  'Enter Email':
+    result:  'Email Sent / Notify'
   'Cancel': 
     result: 'Root:Login View'
-    machine: >
+    machine: 
         actions:
             -   action: 'click'
                 element: ".popup.icon-x"
@@ -50,39 +58,101 @@ var starting = `
         actions:
             -   action: 'click'
                 element: "#popup .icon-x"
-`;
+
+  `
+}
 
 export default class App extends Component {
   constructor () {
     super();
 
     this.state = {
-      yaml: starting,
-      graph: yamlParse(starting)
+      flows: flows,
+      selected: 'login',
+      yaml: flows.login,
+      graph: yamlParse(flows.login)
     }
+    
+    fetch(url('/flows'))
+    .then(res => res.json())
+    .then(data => {
+      let selected = Object.keys(data)[0];
+
+      this.setState({
+        selected,
+        flows: data,
+        yaml: data[selected],
+        graph: yamlParse(data[selected])
+      });
+    })
+
 
     this.handleYamlChange = this.handleYamlChange.bind(this)
+    this.handleMouseEnterLeave = this.handleMouseEnterLeave.bind(this);
+    this.updateSelectedFlow = this.updateSelectedFlow.bind(this);
+  }
+
+  updateGraph () {
+     this.setState({
+      graph: yamlParse(this.state.flows[this.state.selected])
+    })
+  }
+
+  updateSelectedFlow (key) {
+    this.setState({
+      selected: key,
+      graph: yamlParse(this.state.flows[key])
+    });
   }
 
   handleYamlChange (yamlString) {
-    this.setState({
-      yaml: yamlString,
-      graph: yamlParse(yamlString)
-    })
+
+    try {
+      let newFlows = {...this.state.flows, [this.state.selected]: yamlString };
+      this.setState({ flows: newFlows });
+
+      let parsed = yamlParse(yamlString);
+      this.setState({ graph: parsed });
+        
+      // Update backend
+      fetch(url(`/flows/${this.state.selected}`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: yamlString })
+      });
+    } catch (err) {
+      console.warn(`Error parsing on line: ${err.mark.line}: ${err.message}`);
+    }
+   
+  }
+
+  handleMouseEnterLeave (type, list) {
+    if (type === 'mouseenter') {
+      this.setState({
+        hoverPath: list
+      });
+    } else {
+      this.setState({
+        hoverPath: null
+      })
+    }
   }
 
   render () {
     return (
       <div>
+        <FlowSelector selected={this.state.selected} flows={this.state.flows} onSelected={this.updateSelectedFlow} />
         <div style={{ display: 'flex'}}>
           <div style={{ flex: 2, overflow: 'auto' }}>
             <div>
-              <FlowChart graph={this.state.graph} />
-              <Editor onChange={this.handleYamlChange} yaml={this.state.yaml} />
+              <FlowChart graph={this.state.graph} hoverPath={this.state.hoverPath} />
+              <Editor onChange={this.handleYamlChange} yaml={this.state.flows[this.state.selected]} />
             </div>
           </div>
           <div style={{ flex: 1 }}>
-            <TestCaseList graph={this.state.graph} />
+            <TestCaseList graph={this.state.graph} onMouse={this.handleMouseEnterLeave} />
           </div>
         </div>
       </div>

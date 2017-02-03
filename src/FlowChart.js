@@ -11,16 +11,16 @@ export default class FlowChart extends Component {
   }
 
   componentDidMount () {
-    update(this.props.graph);
+    update(this.props.graph, this.props.hoverPath);
   }
 
   componentDidUpdate (prevProps, prevState) {
-    update(this.props.graph);
+    update(this.props.graph, this.props.hoverPath);
   }
 }
 
 
-function update(root) {
+function update(root, hoverPath) {
 
 // For matching Refs
 var regex = /ref\((.+)\)/;
@@ -148,14 +148,23 @@ var svg = d3.select("#chart").append("svg")
 	  .attr("dy", ".35em")
 	  .attr("text-anchor", d => 'middle')
 	  .text(d => d.name)
-    .on('mouseover', d => {
-      console.log(d);
-    })
-	  .style("fill-opacity", 1);
+	  .style("fill", d => {
+
+			if (hoverPath) {
+
+				if (hoverPath.indexOf(d) >= 0) {
+					return 'blue';
+				}
+
+				return 'rgba(0,0,0,.2)';
+			}
+
+			return 'black';
+		});
 
 
   svg.append("svg:defs").selectAll("marker")
-    .data(["end"])      // Different link/path types can be defined here
+    .data(["end", "end+hover"])      // Different link/path types can be defined here
     .enter().append("svg:marker")    // This section adds in the arrows
     .attr("id", String)
     .attr("viewBox", "0 -5 10 10")
@@ -163,6 +172,16 @@ var svg = d3.select("#chart").append("svg")
     .attr("refY", 0)
     .attr("markerWidth", 6)
     .attr("markerHeight", 6)
+		.attr('fill', d => {
+			if (hoverPath) {
+				if (d === 'end+hover') {
+					return 'blue';
+				}
+
+				return 'rgba(0,0,0, .2)';
+			}
+			return 'black';
+		})
     .attr("orient", "auto")
     .append("svg:path")
     .attr("d", "M0,-5L10,0L0,5");
@@ -179,12 +198,30 @@ var svg = d3.select("#chart").append("svg")
   // Enter the links.
   link.enter().append("path")
 	  .attr("class", "link")
-  	  .style("stroke", d => {
+  	.style("stroke", d => {
 			if (d.target.type==='action') return 'rgba(0,0,0,0)';
+
+			if (hoverPath) {
+				if (hoverPath.indexOf(d.source) === hoverPath.indexOf(d.target) - 1) {
+					return 'blue';
+				}
+
+				return 'rgba(0,0,0, .2)';
+			}
+
 			return 'black';
 		})
 	  .attr("d", diagonal)
-	  .attr('marker-end', d => d.source.type === 'action' ? 'url(#end)' : '');
+	  .attr('marker-end', d => {
+
+			if (d.source.type !== 'action') return '';
+
+			if (hoverPath && hoverPath.indexOf(d.source) === hoverPath.indexOf(d.target) - 1) {
+				return 'url(#end+hover)';
+			}
+
+			return 'url(#end)';
+		});
 
 
 }

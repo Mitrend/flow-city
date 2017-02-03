@@ -17,6 +17,7 @@ export default function TestCaseList ({ graph, onMouse }) {
 	}
 
 	var paths = walk(graph);
+	
 	return (
 		<div style={{ paddingLeft: '20px'}}>
 			<h3>Paths</h3>

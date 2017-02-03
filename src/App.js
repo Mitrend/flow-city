@@ -4,10 +4,11 @@ import yamlParse from './yamlParse'
 
 import FlowChart from './FlowChart'
 import Editor from './Editor'
+import FlowSelector from './FlowSelector'
 import TestCaseList from './TestCaseList'
 
 
-var starting = `
+var LOGIN = `
 "Root:Login View":
   "Click Forgot Password": 
     result: "Forgot Password Popup"
@@ -32,29 +33,57 @@ var starting = `
 'Email Sent / Notify':
   'Clear Notify':
     result:  'Root:Login View'
-
-
-
 `;
+
+var REGISTER = `
+"Root:Register View":
+  "Do Something":
+    result: "Something Happened"
+    human: >
+      You did something
+    machine: >
+      click #something
+`;
+
+const flows = { LOGIN, REGISTER }
+
 
 export default class App extends Component {
   constructor () {
     super();
+    
 
     this.state = {
-      yaml: starting,
-      graph: yamlParse(starting)
+      flows: flows,
+      selected: 'LOGIN',
+      yaml: flows.LOGIN,
+      graph: yamlParse(flows.LOGIN)
     }
 
     this.handleYamlChange = this.handleYamlChange.bind(this)
     this.handleMouseEnterLeave = this.handleMouseEnterLeave.bind(this);
+    this.updateSelectedFlow = this.updateSelectedFlow.bind(this);
+  }
+
+  updateGraph () {
+     this.setState({
+      graph: yamlParse(this.state.flows[this.state.selected])
+    })
+  }
+
+  updateSelectedFlow (key) {
+    this.setState({
+      selected: key,
+      graph: yamlParse(this.state.flows[key])
+    });
   }
 
   handleYamlChange (yamlString) {
+    let newFlows = {...this.state.flows, [this.state.selected]: yamlString };
     this.setState({
-      yaml: yamlString,
-      graph: yamlParse(yamlString)
-    })
+      flows: newFlows,
+      graph: yamlParse(newFlows[this.state.selected])
+    });
   }
 
   handleMouseEnterLeave (type, list) {
@@ -72,11 +101,12 @@ export default class App extends Component {
   render () {
     return (
       <div>
+        <FlowSelector selected={this.state.selected} flows={this.state.flows} onSelected={this.updateSelectedFlow} />
         <div style={{ display: 'flex'}}>
           <div style={{ flex: 2, overflow: 'auto' }}>
             <div>
               <FlowChart graph={this.state.graph} hoverPath={this.state.hoverPath} />
-              <Editor onChange={this.handleYamlChange} yaml={this.state.yaml} />
+              <Editor onChange={this.handleYamlChange} yaml={this.state.flows[this.state.selected]} />
             </div>
           </div>
           <div style={{ flex: 1 }}>

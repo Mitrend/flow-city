@@ -17,8 +17,6 @@ export default function yamlParse(yamlString) {
 
 		visited.push(key);
 
-		console.log(node);
-
 		return {
 			name: key,
 			type: 'view',

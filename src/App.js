@@ -13,9 +13,10 @@ var starting = `
     result: "Forgot Password Popup"
     human: >
       Just click on the forgot password button....
-    machine: >
-      click #forgotPassword
-
+    machine:
+        actions:
+            -   action: 'click'
+                element: "#js-forgot-password"
   "Enter Valid Credentials":
     result: "Dashboard"
   "Enter Invalid Credentials":
@@ -24,17 +25,31 @@ var starting = `
 'Forgot Password Popup':
   'Enter Email':
     result:  'Email Sent / Notify'
+    machine: 
+        wait: 2000
+        actions:
+            -   action: "sendKeys"
+                element: "input[name='passwordEmail']"
+                value: "mike@mitrend.com"
+            -   action: "click"
+                element: "#popup #rightAction"
+                snapshot: "Filled in Form"
   'Cancel': 
     result: 'Root:Login View'
+    machine: >
+        actions:
+            -   action: 'click'
+                element: ".popup.icon-x"
   'Casdfsncel': 
     result: 'Root:Login View'
 
 'Email Sent / Notify':
   'Clear Notify':
     result:  'Root:Login View'
-
-
-
+    machine: 
+        actions:
+            -   action: 'click'
+                element: "#popup .icon-x"
 `;
 
 export default class App extends Component {

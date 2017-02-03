@@ -26,7 +26,9 @@ export default function TestCaseList ({ graph }) {
 						<div key={i}>
 							<hr />
 							<ul>
-								{ path.map((val,i) => <li key={i}> {val.type === 'action' ? 'DO THIS:' : '---> See:'} {val.name} </li>) }
+								{ path
+									.filter(val => val.type === 'action')
+									.map((val,i) => <li key={i}>{val.human || val.name } </li>) }
 							</ul>
 						</div>
 					);

@@ -29,6 +29,8 @@ export default function yamlParse(yamlString) {
 										name: action, 
 										type: 'action', 
 										viewDepth,
+										human: node[action].human,
+										machine: node[action].machine,
 										children: [ transform(node[action].result, json[node[action].result], viewDepth + 1) ] 
 									};
 								})

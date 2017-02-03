@@ -13,7 +13,7 @@ var starting = `
     result: "Forgot Password Popup"
     human: >
       Just click on the forgot password button....
-    script: >
+    machine: >
       click #forgotPassword
 
   "Enter Valid Credentials":

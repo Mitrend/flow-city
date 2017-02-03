@@ -1,136 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-
-    <title>Collapsible Tree Example</title>
-
-    <style>
-
-	.node circle {
-	  fill: #fff;
-	  stroke: steelblue;
-	  stroke-width: 3px;
-	}
-
-	.node text { 
-		font: 12px sans-serif; 	
-	}
-
-	.link {
-	  fill: none;
-	  stroke: #ccc;
-	  stroke-width: 2px;
-	}
-
-	textarea {
-		width: 50%;
-		height: 400px;
-	}
-	
-    </style>
-
-  </head>
-
-  <body>
-
-<div id='chart'></div>
-<textarea>
-"Root:Login View":
-  "Click Forgot Password": "Forgot Password Popup"
-  "Enter Valid Credentials": "Dashboard"
-  "Enter Invalid Credentials": "Show Errors"
-
-'Forgot Password Popup':
-  'Enter Email': 'Email Sent / Notify'
-  'Cancel': 'Root:Login View'
-  'Casdfsncel': 'Root:Login View'
-
-'Email Sent / Notify':
-  'Clear Notify': 'Root:Login View'
-
-</textarea>
-<button>Update</button>
+import React, { Component } from 'react'
 
 
-<!-- load the d3.js library -->	
-<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/3.7.0/js-yaml.min.js"></script>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-	
-<script>
+var d3 = require('d3');
 
+export default class FlowChart extends Component {
+  render() {
+    return (
+      <div id='chart'></div>
+    )
+  }
 
+  componentDidMount () {
+    update(this.props.graph);
+  }
 
-
-
-var textarea = document.querySelector('textarea');
-var btn = document.querySelector('button');
-
-btn.addEventListener('click', function (e) {
-	parseAndUpdate(textarea.value);
-})
-
-function buildTestCases (graph) {
-	
+  componentDidUpdate (prevProps, prevState) {
+    update(this.props.graph);
+  }
 }
 
-function parseAndUpdate (yamlString) {
-
-	var json = jsyaml.load(yamlString);
-
-	var baseKey = Object.keys(json).find(k => k.indexOf('Root') === 0);
-	var base = json[baseKey]
-
-	var visited = [];
-
-	function transform (key, node, viewDepth = 1) {
-		if (visited.indexOf(key) >= 0) {
-			return { name: `ref(${key})`, type: 'view', viewDepth }
-		}
-
-		visited.push(key);
-
-		return {
-			name: key,
-			type: 'view',
-			viewDepth,
-			children: node && Object.keys(node)
-								.map(action => {
-									return { 
-										name: action, 
-										type: 'action', 
-										viewDepth,
-										children: [ transform(node[action], json[node[action]], viewDepth + 1) ] 
-									};
-								})
-		}
-	}
-
-
-	var root = transform(baseKey, base);
-	console.log(JSON.stringify(root, null, 3));
-
-	update(root);
-}
-
-parseAndUpdate(textarea.value);
-
-  
 
 function update(root) {
 
 // For matching Refs
 var regex = /ref\((.+)\)/;
 
-// ************** Generate the tree diagram	 *****************
-var margin = {top: 20, right: 120, bottom: 20, left: 120},
-	width = 960 - margin.right - margin.left,
-	height = 500 - margin.top - margin.bottom;
 	
 var i = 0;
+var tree = d3.layout.tree();
 
-var tree = d3.layout.tree()
-	.size([height, width]);
+
+  // Compute the new tree layout.
+  var nodes = tree.nodes(root).reverse(),
+	  links = tree.links(nodes);
 
 var diagonal = d3.svg.diagonal()
 	.source(d => {
@@ -142,7 +44,6 @@ var diagonal = d3.svg.diagonal()
 		}
 
 		if (d.source.depth > target.depth) {
-			console.log(d.source.name, target.name);
 			return { x: d.source.x, y: d.source.y - (rect.width/2) }
 		} else if (d.source.depth === target.depth) {
 			return { x: d.source.x, y: d.source.y + (rect.width/2) }
@@ -174,41 +75,8 @@ var existingSvg = document.querySelector('#chart > svg');
 if (existingSvg) existingSvg.remove();
 
 var svg = d3.select("#chart").append("svg")
-	.attr("width", width + margin.right + margin.left)
-	.attr("height", height + margin.top + margin.bottom)
   .append("g")
-	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-
-
-
-
-  // Compute the new tree layout.
-  var nodes = tree.nodes(root).reverse(),
-	  links = tree.links(nodes);
-// Need to add extra links for circular references
-
-// links.filter(link => regex.test(link.target.name))
-// .forEach(link => {
-// 	console.log(link.source.name, link.target.name);
-// 	var newTarget = nodes.find(n => n.name === regex.exec(link.target.name)[1]);
-// 	console.log('new Target', newTarget);
-// 	// link.target = newTarget;
-
-
-// 	// svg.append('path','g')
-// 	// .attr('class', 'link')
-// 	// .attr('d', d => {
-// 	// 	return diagonal({
-// 	// 		source: link.source,
-// 	// 		target: newTarget
-// 	// 	});
-// 	// });
-// });
-
-// Remove ref node
-// nodes.filter(node => regex.test(node.name))
-// .forEach(node => nodes.splice(nodes.indexOf(node), 1));
+	.attr("transform", "translate(100, 20)");
 
   // Normalize for fixed-depth.
   nodes.forEach(function(d) { d.y = d.depth * 130; });
@@ -280,6 +148,9 @@ var svg = d3.select("#chart").append("svg")
 	  .attr("dy", ".35em")
 	  .attr("text-anchor", d => 'middle')
 	  .text(d => d.name)
+    .on('mouseover', d => {
+      console.log(d);
+    })
 	  .style("fill-opacity", 1);
 
 
@@ -317,8 +188,3 @@ var svg = d3.select("#chart").append("svg")
 
 
 }
-
-</script>
-	
-  </body>
-</html>

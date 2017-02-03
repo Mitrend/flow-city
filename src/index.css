@@ -1,0 +1,39 @@
+body {
+  margin: 0;
+  padding: 25px;
+  font-family: sans-serif;
+}
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 3px;
+}
+
+.node text { 
+  font: 12px sans-serif; 	
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 2px;
+}
+
+textarea {
+  width: 99%;
+  height: 400px;
+}
+
+#chart {
+  overflow:scroll;
+  height: 400px;
+}
+
+svg {
+  width: 1100px;
+  height: 900px;
+}
+
+hr {
+  border-top: 1px dashed #8c8b8b;
+}

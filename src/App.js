@@ -47,6 +47,7 @@ export default class App extends Component {
     }
 
     this.handleYamlChange = this.handleYamlChange.bind(this)
+    this.handleMouseEnterLeave = this.handleMouseEnterLeave.bind(this);
   }
 
   handleYamlChange (yamlString) {
@@ -56,18 +57,30 @@ export default class App extends Component {
     })
   }
 
+  handleMouseEnterLeave (type, list) {
+    if (type === 'mouseenter') {
+      this.setState({
+        hoverPath: list
+      });
+    } else {
+      this.setState({
+        hoverPath: null
+      })
+    }
+  }
+
   render () {
     return (
       <div>
         <div style={{ display: 'flex'}}>
           <div style={{ flex: 2, overflow: 'auto' }}>
             <div>
-              <FlowChart graph={this.state.graph} />
+              <FlowChart graph={this.state.graph} hoverPath={this.state.hoverPath} />
               <Editor onChange={this.handleYamlChange} yaml={this.state.yaml} />
             </div>
           </div>
           <div style={{ flex: 1 }}>
-            <TestCaseList graph={this.state.graph} />
+            <TestCaseList graph={this.state.graph} onMouse={this.handleMouseEnterLeave} />
           </div>
         </div>
       </div>

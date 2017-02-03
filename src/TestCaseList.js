@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function TestCaseList ({ graph }) {
+export default function TestCaseList ({ graph, onMouse }) {
 
 	function walk (node, path = [], basket = []) {
 		var fork = path.slice(0);
@@ -23,7 +23,7 @@ export default function TestCaseList ({ graph }) {
 			{ 
 				paths.map((path,i) => {
 					return (
-						<div key={i}>
+						<div key={i} onMouseEnter={evt => onMouse(evt.type, path)} onMouseLeave={evt => onMouse(evt.type, path)}>
 							<hr />
 							<ul>
 								{ path

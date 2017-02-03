@@ -6,10 +6,13 @@
     "react-scripts": "0.8.5"
   },
   "dependencies": {
-    "blueimp-md5": "^2.6.0",
+    "bluebird": "^3.4.7",
     "d3": "^3.5.0",
+    "express": "^4.14.1",
     "js-yaml": "^3.7.0",
+    "minimist": "^1.2.0",
     "react": "^15.4.2",
+    "react-codemirror": "^0.3.0",
     "react-dom": "^15.4.2"
   },
   "scripts": {

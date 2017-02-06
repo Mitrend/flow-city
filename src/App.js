@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 
-import yamlParse from './yamlParse'
+import Utils from './Utils'
 
 import FlowChart from './FlowChart'
 import Editor from './Editor'
@@ -29,6 +29,10 @@ let flows = {
     result: "Dashboard" 
   "Enter Invalid Credentials":
     result:  "Show Errors"
+
+'Forgot Password Popup':
+  'Enter Email':
+    result:  'Email Sent / Notify'
     machine: 
         wait: 2000
         actions:
@@ -38,10 +42,6 @@ let flows = {
             -   action: "click"
                 element: "#popup #rightAction"
                 snapshot: "Filled in Form"
-
-'Forgot Password Popup':
-  'Enter Email':
-    result:  'Email Sent / Notify'
   'Cancel': 
     result: 'Root:Login View'
     machine: 
@@ -70,7 +70,7 @@ export default class App extends Component {
       flows: flows,
       selected: 'login',
       yaml: flows.login,
-      graph: yamlParse(flows.login)
+      graph: Utils.yamlParse(flows.login)
     }
     
     fetch(url('/flows'))
@@ -82,7 +82,7 @@ export default class App extends Component {
         selected,
         flows: data,
         yaml: data[selected],
-        graph: yamlParse(data[selected])
+        graph: Utils.yamlParse(data[selected])
       });
     })
 
@@ -94,14 +94,14 @@ export default class App extends Component {
 
   updateGraph () {
      this.setState({
-      graph: yamlParse(this.state.flows[this.state.selected])
+      graph: Utils.yamlParse(this.state.flows[this.state.selected])
     })
   }
 
   updateSelectedFlow (key) {
     this.setState({
       selected: key,
-      graph: yamlParse(this.state.flows[key])
+      graph: Utils.yamlParse(this.state.flows[key])
     });
   }
 
@@ -111,7 +111,7 @@ export default class App extends Component {
       let newFlows = {...this.state.flows, [this.state.selected]: yamlString };
       this.setState({ flows: newFlows });
 
-      let parsed = yamlParse(yamlString);
+      let parsed = Utils.yamlParse(yamlString);
       this.setState({ graph: parsed });
         
       // Update backend
